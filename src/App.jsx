@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk';
 import { toast } from 'sonner';
