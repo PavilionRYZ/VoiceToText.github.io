@@ -19,7 +19,7 @@ Perfect for fast hands-free writing, note-taking, or accessibility.
 
 ## 🎥 Demo
 
-*(Add a GIF or video here later — record the app in action!)*
+![alt text](image.png)
 
 Example: Hold mic → say "Hello world this is a test" → release → edit → click "Insert" → text appears in your editor.
 
