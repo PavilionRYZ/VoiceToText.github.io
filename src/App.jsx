@@ -1,163 +1,36 @@
-import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk';
-import { toast } from 'sonner';
-import { Mic, MicOff, Send, Copy, Trash2 } from 'lucide-react';
+import Header from './components/Header';
+import MicButton from './components/MicButton';
+import Editor from './components/Editor';
+import { useVoiceRecorder } from './hooks/useVoiceRecorder';
 
 const App = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [transcription, setTranscription] = useState('');
-  const [editedText, setEditedText] = useState('');
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [deepgramConnection, setDeepgramConnection] = useState(null);
-
-  const DEEPGRAM_API_KEY = import.meta.env.VITE_DEEPGRAM_API_KEY;
-
-  // Sync transcription → editable textarea
-  useEffect(() => {
-    if (transcription) {
-      setEditedText((prev) => prev + ' ' + transcription);
-      setTranscription('');
-    }
-  }, [transcription]);
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-      setMediaRecorder(recorder);
-
-      const deepgram = createClient(DEEPGRAM_API_KEY);
-      const connection = deepgram.listen.live({
-        model: 'nova-2',
-        language: 'en-US',
-        smart_format: true,
-        interim_results: true,
-      });
-      setDeepgramConnection(connection);
-
-      connection.on(LiveTranscriptionEvents.Open, () => {
-        toast.success('🎙️ Recording started');
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0 && connection.getReadyState() === 1) {
-            connection.send(event.data);
-          }
-        };
-        recorder.start(250);
-      });
-
-      connection.on(LiveTranscriptionEvents.Transcript, (data) => {
-        const transcript = data.channel?.alternatives[0]?.transcript || '';
-        if (transcript && data.is_final) {
-          setTranscription(transcript);
-        }
-      });
-
-      connection.on(LiveTranscriptionEvents.Error, (err) => {
-        toast.error('Deepgram error: ' + err.message);
-      });
-
-      setIsRecording(true);
-    } catch (err) {
-      toast.error('Microphone access denied or unavailable');
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRecorder?.stop();
-    mediaRecorder?.stream.getTracks().forEach((t) => t.stop());
-    deepgramConnection?.finish();
-    setIsRecording(false);
-  };
-
-  const insertText = async () => {
-    const textToInsert = editedText.trim();
-    if (!textToInsert) {
-      toast('Nothing to insert');
-      return;
-    }
-
-    try {
-      await invoke('type_text', { text: textToInsert + ' ' });
-      toast.success('✅ Text inserted');
-    } catch (err) {
-      toast.error('Failed to insert text');
-    }
-  };
-
-  const clearText = () => {
-    setEditedText('');
-    setTranscription('');
-    toast('Cleared');
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(editedText);
-    toast.success('Copied to clipboard');
-  };
+  const {
+    isRecording,
+    editedText,
+    setEditedText,
+    startRecording,
+    stopRecording,
+    clearText,
+  } = useVoiceRecorder();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50
+      dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+
       <div className="w-full max-w-2xl">
+        <Header />
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2
-               [text-shadow:0_4px_12px_rgba(0,0,0,0.25)]">
-            Voice to Text Dictation
-          </h1>
+        <MicButton
+          isRecording={isRecording}
+          startRecording={startRecording}
+          stopRecording={stopRecording}
+        />
 
-          <p className="text-gray-600 dark:text-gray-400">
-            Hold the microphone to speak • Release to stop
-          </p>
-        </div>
-
-        {/* Mic Button */}
-        <div className="flex justify-center mb-10">
-          <button
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onMouseLeave={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            className={`p-10 rounded-full shadow-2xl transition-all duration-300
-              ${isRecording
-                ? 'bg-red-500 animate-pulse'
-                : 'bg-gradient-to-r from-green-500 to-emerald-500'
-              } text-white`}
-          >
-            {isRecording ? <MicOff className="w-16 h-16" /> : <Mic className="w-16 h-16" />}
-          </button>
-        </div>
-
-        {/* Editor */}
-        {editedText && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border">
-            <div className="flex justify-between mb-3">
-              <h2 className="text-xl font-semibold text-white">Transcribed Text</h2>
-              <div className="flex gap-2">
-                <button onClick={copyToClipboard} className='text-white'><Copy /></button>
-                <button onClick={clearText} className='text-white'><Trash2 /></button>
-              </div>
-            </div>
-
-            <textarea
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              className="w-full h-48 p-4 rounded-xl bg-gray-50 dark:bg-gray-900 text-white"
-            />
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={insertText}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
-              >
-                <Send className="w-5 h-5" />
-                Insert into Active App
-              </button>
-            </div>
-          </div>
-        )}
+        <Editor
+          editedText={editedText}
+          setEditedText={setEditedText}
+          clearText={clearText}
+        />
       </div>
     </div>
   );
