@@ -1,7 +1,7 @@
 # Voice to Text Dictation App
 A modern, cross-platform **push-to-talk voice dictation desktop app** built with **Tauri v2**, **React 19**, **Tailwind CSS**, and **Deepgram Nova-2** real-time transcription.
 
-Speak → Transcribe in real-time → Edit → Insert text directly into any active application (like Notion, Word, Slack, etc.) using simulated keyboard input.
+Speak → Transcribe in real-time → Edit → Insert text directly.
 
 Perfect for fast hands-free writing, note-taking, or accessibility.
 
@@ -34,8 +34,9 @@ Example: Hold mic → say "Hello world this is a test" → release → edit → 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/voice-to-text-app.git
-cd voice-to-text-app
+git clone https://github.com/yourusername/VoiceToText.github.io.git
+
+cd VoiceToText
 ```
 
 ### 2. Install Dependencies
