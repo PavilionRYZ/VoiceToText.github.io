@@ -57,7 +57,7 @@ VITE_DEEPGRAM_API_KEY=your_deepgram_api_key_here
 ### 4. Run in Development
 
 ```bash
-npx tauri dev
+npm run tauri dev
 ```
 
 The app will open in a native desktop window. Hold the microphone button to test!
